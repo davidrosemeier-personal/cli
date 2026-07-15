@@ -1,0 +1,12 @@
+.env
+.venv/
+__pycache__/
+*.mp3
+*.wav
+*.m4a
+*_transcript.md
+*_transcript_cache.json
+*_speaker_names.json
+known_names.json
+uploads/
+.claude/

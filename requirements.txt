@@ -1,0 +1,4 @@
+assemblyai>=0.35.0
+python-dotenv>=1.0.0
+streamlit>=1.30.0
+imageio-ffmpeg>=0.4.9
