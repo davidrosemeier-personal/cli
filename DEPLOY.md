@@ -1,16 +1,38 @@
 # Deployment
 
+Es gibt zwei unterstützte Wege, die App bereitzustellen:
+
+## Option A: Railway (oder andere Single-Container-Plattformen)
+
+Plattformen wie Railway bauen das `Dockerfile` direkt und stellen selbst
+Domain + TLS bereit — der Caddy-Reverse-Proxy aus Option B kommt dabei
+**nicht** zum Einsatz.
+
+- **Port:** `8501` (Streamlit-Standardport, im Dockerfile per
+  `--server.port=8501` gesetzt)
+- **Login:** Da kein Caddy/Basic-Auth-Layer davor läuft, übernimmt die App
+  selbst den Passwortschutz. Environment-Variable `APP_PASSWORD` in den
+  Railway-Projekteinstellungen setzen — ohne diese Variable ist die App
+  ungeschützt erreichbar. `ASSEMBLYAI_API_KEY` genauso als Variable setzen.
+- Persistenz: Railway-Dateisystem ist standardmäßig **nicht** dauerhaft
+  über Deploys hinweg (außer mit einem Volume). Ohne Volume gehen
+  `known_names.json` und Caches bei jedem Redeploy verloren — für reine
+  Nutzung ohne Namens-Wiederverwendung reicht das, für dauerhafte Historie
+  ein Railway-Volume auf `/app/uploads` mounten.
+
+## Option B: Eigener VPS mit Docker Compose + Caddy
+
 Deployt die App als Docker-Container hinter einem Caddy-Reverse-Proxy, der
 automatisch ein TLS-Zertifikat besorgt (Let's Encrypt) und den Zugriff per
 Basic Auth schützt.
 
-## Voraussetzungen
+### Voraussetzungen
 
 - Ein VPS (z.B. Hetzner) mit Docker + Docker Compose Plugin installiert
 - Eine Domain (oder Subdomain), deren DNS-A-Record auf die Server-IP zeigt
 - Ports 80 und 443 auf dem Server offen (für Let's Encrypt + HTTPS)
 
-## Einmalige Einrichtung auf dem Server
+### Einmalige Einrichtung auf dem Server
 
 1. Repo klonen:
    ```
@@ -42,7 +64,7 @@ Basic Auth schützt.
 4. Aufrufen: `https://<DOMAIN>` — Browser fragt nach Benutzername/Passwort
    (Basic Auth), danach erscheint die App.
 
-## Laufende Updates (automatisch per Git-Push)
+### Laufende Updates (automatisch per Git-Push)
 
 Der Workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) deployt bei jedem Push auf `main`
 automatisch neu. Dafür in den GitHub-Repo-Settings unter **Settings → Secrets
@@ -59,7 +81,7 @@ and variables → Actions** folgende Secrets anlegen:
 Ohne diese Secrets bleibt der Workflow inaktiv — manuelles Update auf dem
 Server per `git pull && docker compose up -d --build` funktioniert immer.
 
-## Daten & Persistenz
+### Daten & Persistenz
 
 Alles, was die App an Nutzdaten erzeugt (hochgeladene Audiodateien, Caches,
 Transkripte, `known_names.json`), landet im Ordner `./data` auf dem Server
@@ -67,10 +89,11 @@ Transkripte, `known_names.json`), landet im Ordner `./data` auf dem Server
 
 ## Bekannte Einschränkungen (aktueller Stand)
 
-- **Basic Auth ist ein gemeinsames Login** für alle Nutzer — es gibt keine
-  Trennung nach Person. Für den Anfang (du + wenige Kolleg:innen) ist das
-  ok; bei mehr Nutzern wäre ein Umstieg auf OIDC (`st.login()` mit
-  Google/Entra) und eine Trennung der Daten pro Nutzer sinnvoll.
+- **Beide Login-Varianten (Basic Auth via Caddy, `APP_PASSWORD` in der App)
+  sind ein gemeinsames Login** für alle Nutzer — es gibt keine Trennung nach
+  Person. Für den Anfang (du + wenige Kolleg:innen) ist das ok; bei mehr
+  Nutzern wäre ein Umstieg auf OIDC (`st.login()` mit Google/Entra) und eine
+  Trennung der Daten pro Nutzer sinnvoll.
 - **Keine automatische Löschung** hochgeladener Audiodateien. Da es sich um
   dienstliche Meeting-Aufnahmen handelt, lohnt sich vorher ein kurzer
   Datenschutz-Check (Speicherdauer, AssemblyAI-Verarbeitung außerhalb der

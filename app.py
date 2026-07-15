@@ -4,14 +4,47 @@ speaker diarization, and naming speakers by listening to voice samples.
 Run with: streamlit run app.py
 """
 
+import hmac
+import os
 import tempfile
 from pathlib import Path
 
 import streamlit as st
+from dotenv import load_dotenv
 
 import core
 
+load_dotenv()
+
 st.set_page_config(page_title="Plaud Transkript", page_icon="🎙️", layout="centered")
+
+
+def check_password():
+    """Gate the app behind a shared password read from APP_PASSWORD.
+
+    If APP_PASSWORD isn't set (e.g. local development), the app is open.
+    """
+    app_password = os.environ.get("APP_PASSWORD")
+    if not app_password:
+        return True
+    if st.session_state.get("authenticated"):
+        return True
+
+    st.title("🔒 Login")
+    with st.form("login_form"):
+        entered = st.text_input("Passwort", type="password")
+        submitted = st.form_submit_button("Anmelden")
+    if submitted:
+        if hmac.compare_digest(entered, app_password):
+            st.session_state["authenticated"] = True
+            st.rerun()
+        else:
+            st.error("Falsches Passwort.")
+    return False
+
+
+if not check_password():
+    st.stop()
 
 UPLOADS_DIR = Path(__file__).parent / "uploads"
 UPLOADS_DIR.mkdir(exist_ok=True)
