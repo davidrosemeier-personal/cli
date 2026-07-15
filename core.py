@@ -12,7 +12,9 @@ from types import SimpleNamespace
 from dotenv import load_dotenv
 
 VALID_EXTENSIONS = {".mp3", ".wav", ".m4a"}
-KNOWN_NAMES_PATH = Path(__file__).parent / "known_names.json"
+KNOWN_NAMES_PATH = Path(
+    os.environ.get("KNOWN_NAMES_PATH", Path(__file__).parent / "known_names.json")
+)
 
 
 class TranscriptionError(Exception):
